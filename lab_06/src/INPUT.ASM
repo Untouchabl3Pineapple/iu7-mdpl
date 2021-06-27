@@ -1,0 +1,53 @@
+PUBLIC NUMBER
+
+PUBLIC INPUTCMD
+PUBLIC INPUTNUMBER
+
+DATASEG SEGMENT PARA PUBLIC 'DATA'
+    NUMBER DW 0
+    INMSG DB 'Enter unsigned decimal number (from 0 to 65535): $'
+DATASEG ENDS
+
+CODESEG SEGMENT PARA PUBLIC 'CODE'
+    ASSUME CS:CODESEG, DS:DATASEG
+
+INPUTCMD PROC NEAR
+    MOV AH, 1
+    INT 21H
+    SUB AL, '0'
+    ;MOV CL, 2
+    ;MUL CL
+    MOV SI, AX
+    RET
+INPUTCMD ENDP
+
+INPUTNUMBER PROC NEAR
+    MOV AH, 9
+    MOV DX, OFFSET INMSG
+    INT 21H
+
+    MOV BX, 0
+
+    INSYMB:
+        MOV AH, 1
+        INT 21H
+        CMP AL, 13
+
+        JE ENDINP
+
+        MOV CL, AL
+        MOV AX, 10
+        MUL BX
+        MOV BX, AX
+
+        SUB CL, '0'
+        ADD BX, CX
+        JMP INSYMB
+
+    ENDINP:
+    MOV NUMBER, BX
+    RET
+INPUTNUMBER ENDP
+
+CODESEG ENDS
+END

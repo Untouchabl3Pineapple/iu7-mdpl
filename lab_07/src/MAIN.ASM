@@ -1,0 +1,105 @@
+.MODEL TINY
+.CODE
+.186
+
+ORG 100H
+
+MAIN:
+    JMP INIT
+
+    CURRENT DB 0
+    FLAG_IS_INIT DB 13
+    SPEED DB 01FH
+    OLD_INTERRUPTION DD ?
+
+INTERRUPTION:
+    PUSH AX
+    PUSH BX
+    PUSH CX
+    PUSH DX
+    PUSH ES
+    PUSH DS
+
+    MOV AH, 02H 
+    INT 1AH
+
+    CMP DH, CURRENT
+    MOV CURRENT, DH
+    JE END_LOOP
+
+    MOV AL, 0F3H
+    OUT 60H, AL
+    MOV AL, SPEED
+    OUT 60H, AL
+
+    DEC SPEED
+
+    TEST SPEED, 01FH
+    JZ RESET_SPEED
+    JMP END_LOOP
+
+    RESET_SPEED:
+        MOV SPEED, 01FH
+
+    END_LOOP:
+        POP DS
+        POP ES
+        POP DX
+        POP CX
+        POP BX
+        POP AX
+
+        JMP CS:OLD_INTERRUPTION
+
+INIT:    
+    MOV AH, 35H
+    MOV AL, 08H
+    INT 21H                           
+
+    CMP ES:FLAG_IS_INIT, 13
+    JE EXIT
+
+    MOV WORD PTR OLD_INTERRUPTION, BX
+    MOV WORD PTR OLD_INTERRUPTION + 2, ES
+
+    MOV AH, 25H
+    MOV AL, 08H     
+    MOV DX, OFFSET INTERRUPTION
+    INT 21H                             
+
+    MOV DX, OFFSET INIT
+    INT 27H
+
+EXIT:
+    PUSH AX
+    PUSH BX
+    PUSH CX
+    PUSH DX
+    PUSH ES
+    PUSH DS
+
+    MOV DX, WORD PTR ES:OLD_INTERRUPTION
+    MOV DS, WORD PTR ES:OLD_INTERRUPTION + 2
+    MOV AH, 25H
+    MOV AL, 08H
+    INT 21H
+
+    MOV AL, 0F3H
+    OUT 60H, AL
+    MOV AL, 0
+    OUT 60H, AL
+
+    POP DS
+    POP ES
+    POP DX
+    POP CX
+    POP BX
+    POP AX
+
+    MOV AH, 49H
+    INT 21H
+
+    MOV AX, 4C00H
+    INT 21H
+
+END MAIN
